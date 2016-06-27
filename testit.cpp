@@ -8,6 +8,10 @@ int main (){
     std::cout << std::endl;
     std::cout << something << std::endl;
     Command command;
-    command.setCommandBuffer(something);
-    command.evaluateAddress();
+    bool valid = command.parse(something, 2, 3);
+    if (valid)
+        cout << "it's valid" << endl;
+    else
+        cout << "it's invalid" << endl;
+//    command.evaluateAddress();
 }

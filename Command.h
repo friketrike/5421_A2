@@ -2,9 +2,14 @@
 #include <iostream>
 #include <string>
 #include <cstddef>
+#include <sstream>   
+//#include <algorithm> // std::remove
+using namespace std;
 
 class Command{
+
   public:
+    // TODO probably can do without this, but maybe it's actually useful
     enum CommandType {
         insert = 'i', 
         append = 'a', 
@@ -18,29 +23,39 @@ class Command{
         printCurrLine = '=', 
         notRecognized
     };
-    CommandType mCommandType{notRecognized};
 
     struct AddressRange {
-        std::size_t start{1};
-        std::size_t end{1};
+        size_t start{0};
+        size_t end{0};
         AddressRange()=default;
-        AddressRange(std::size_t s, std::size_t e)
+        AddressRange(const size_t& s, const size_t& e)
             : start(s)
             , end(e)
         { }
+        AddressRange(const size_t& s)
+            : start(s)
+            , end(s)
+        { }
+        AddressRange& operator=(const AddressRange& ar); 
         virtual ~AddressRange()=default;
     };
-    AddressRange mAddressRange;
 
   private:
-    std::string commandBuffer;
+    static const bool VALID = true;
+    static const bool INVALID = false;
+    CommandType ct{notRecognized};
+    AddressRange ar;
+    // string commandBuffer;
+
+    void removeWhiteSpace(string& s);
 
   public:
     Command()=default;
     virtual ~Command()=default;
-    void setCommandBuffer(std::string &); 
-    void evaluateAddress();
-    void evaluateCommand();
+    bool parse(string& commandBuffer, const size_t& currentLine, 
+            const size_t& totalLines);
+    const AddressRange& getAddressRange() const;
+    const CommandType& getCommandType() const;
 };
 
 #endif 
