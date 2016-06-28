@@ -1,9 +1,14 @@
+
 #include "Command.h"
 
-// using namespace std;
-// TODO first have a function that trims space
+const string Command::VALID_COMMAND_CHAR = "iarpncudwq=";
+const string Command::VALID_ADDR_CHAR = "0123456789";
+const string Command::SPECIAL_ADDR_CHAR = "$";
+const string Command::SEPARATOR = ",";
+const string Command::VALID_CHAR = Command::VALID_COMMAND_CHAR 
+    + Command::VALID_ADDR_CHAR + Command::SPECIAL_ADDR_CHAR 
+    + Command::SEPARATOR;
 
-//void Command::
 Command::AddressRange& Command::AddressRange::operator=(
         const AddressRange& rhs) {
     if(this != &rhs){
@@ -15,7 +20,6 @@ Command::AddressRange& Command::AddressRange::operator=(
 
 void Command::removeWhiteSpace(string& s) {
     size_t foundSpace = s.find_first_of(" \t");
-    auto it = s.begin();
     while (foundSpace != string::npos) {
         s.erase(foundSpace, 1);
         foundSpace = s.find_first_of(" \t");
@@ -25,160 +29,156 @@ void Command::removeWhiteSpace(string& s) {
 bool Command::parse(string& commandBuffer, 
         const size_t& currentLine, const size_t& totalLines){
     removeWhiteSpace(commandBuffer);
+    cs = validCommand;
 
-    const string validCharacters = 
-        "iarpncudw=0123456789$,";
-    size_t invalid = commandBuffer.find_first_not_of(validCharacters);
-    if (invalid != string::npos) {
+    size_t invalidCharPos = commandBuffer.find_first_not_of(VALID_CHAR);
+    if (invalidCharPos != string::npos) {
+        cs = invalidChars;
         return INVALID;
     }
     
-    // TODO remove space from commandBuffer
     ar = AddressRange(currentLine); // set default
 
     // find digits
-    size_t firstNum = commandBuffer.find_first_of("0123456789");
-    size_t lastNum = commandBuffer.find_last_of("0123456789");
+    size_t firstNum = commandBuffer.find_first_of(VALID_ADDR_CHAR);
+    size_t lastNum = commandBuffer.find_last_of(VALID_ADDR_CHAR);
     bool hasDigits = (firstNum != std::string::npos);
     
     // find special address characters
-    size_t firstSpecial = commandBuffer.find_first_of("$");
-    size_t lastSpecial = commandBuffer.find_last_of("$");
-    // special find for .$n
+    size_t firstSpecial = commandBuffer.find_first_of(SPECIAL_ADDR_CHAR);
+    size_t lastSpecial = commandBuffer.find_last_of(SPECIAL_ADDR_CHAR);
+    // special find for $
     bool hasSpecial = (firstSpecial != string::npos);
 
-    size_t comma = commandBuffer.find_first_of(",");
-    size_t check = commandBuffer.find_last_of(",");
+    size_t separator = commandBuffer.find_first_of(SEPARATOR);
+    size_t check = commandBuffer.find_last_of(SEPARATOR);
     // make sure we have at most one comma
-    if (comma != check) {return INVALID;}
-    bool hasComma = (comma != string::npos);
+    if (separator != check) {
+        cs = invalidSyntax; 
+        return INVALID;
+    }
+    bool hasSeparator = (separator != string::npos);
     // find the command now
-    size_t commandChar = commandBuffer.find_first_of("iarpncudw=");
-    check = commandBuffer.find_last_of("iarpncudw="); 
+    //TODO replace commandChar by commandCharPos
+    size_t commandChar = commandBuffer.find_first_of(VALID_COMMAND_CHAR);
+    check = commandBuffer.find_last_of(VALID_COMMAND_CHAR); 
     // make sure we have at most one command
-    if (commandChar != check) {return INVALID;}
+    if (commandChar != check) {
+        cs = invalidSyntax;
+        return INVALID;
+    }
     bool hasCommandChar = (commandChar != string::npos);
+    
+    // if the command is not at the end, leave
+    if (hasCommandChar && (commandChar < (commandBuffer.length()-1)) ) { 
+        cs = invalidSyntax;
+        return INVALID;
+    }
+
     if (hasCommandChar) {
         ct = (CommandType) commandBuffer[commandChar];
     }
     else {
-        ct = print;
+        ct = print; // default command
     }
-    //AddressRange range;
-// conditions special, num, comma || special, comma || num, comma 
-// || comma || special || comma
-// Check that comma appears once, check that there's only one special before or after the comma
-    if (hasDigits && hasSpecial && hasComma) {
-        // special, comma, digit -- makes no sense
-        // digits, comma, special
-        if(((firstSpecial < comma) || (lastNum > comma))
-                || (hasCommandChar && commandChar < lastSpecial)) {
-            return INVALID;
-        }                
+    // Default range and command are set, now evaluate for all combinations
+    // of having or not  separator, special-end-char and digits
+    if (!hasSeparator && !hasSpecial && !hasDigits) {
+        if (!hasCommandChar) {
+            ar.start = 1;
+            ar.end = 1;
+            ct = down;
+        } // else, keep defaults and we're ok
+    }
+    else if (hasDigits && !hasSeparator && !hasSpecial) { 
         string sNum = 
-            commandBuffer.substr(firstNum, lastNum-firstNum);
+            commandBuffer.substr(firstNum, lastNum-(firstNum-1));
         stringstream sstream(sNum);
         sstream >> ar.start;
-        ar.end = totalLines;
+        ar.end = ar.start;
     }
-
-    else if (hasSpecial && hasComma) {
-        if (hasCommandChar && commandChar < lastSpecial) {
-            return INVALID;
-        }                
-        else if (firstSpecial == (comma - 1)) {
-            ar.start = totalLines;
-        }
-        ar.end = totalLines;
-    }
-
-    else if (hasDigits && hasComma) {
-        if (hasCommandChar && commandChar < lastNum) {
+    else if (hasSpecial && !hasDigits && !hasSeparator) {
+        if (firstSpecial != lastSpecial) { 
+            cs = invalidSyntax;
             return INVALID;
         }
-        
         else {
-            bool hasFirst = false;
-            bool hasSecond = false;
-            if (firstNum < comma) {
-                hasFirst = true;
-                string sNum = 
-                    commandBuffer.substr(firstNum, comma-firstNum);
-                stringstream sstream(sNum);
-                sstream >> ar.start;
-            }
-            if (lastNum > comma) {
-                hasSecond = true; 
-                string sNum = 
-                    commandBuffer.substr(comma+1, lastNum-comma);
-                stringstream sstream(sNum);
-                sstream >> ar.end;
-            }
-            /*if (hasFirst, !hasSecond) {
-                ar.end = ar.start;
-            }*/
+            ar.start = totalLines;
+            ar.end = totalLines;
         }
     }
-    else if (hasDigits && hasSpecial) {
+    else if (hasSeparator && !hasDigits && !hasSpecial) {
+        if (!hasCommandChar) {
+            // special case expanding to 1,$p, p is already set 
+            // from first condition in the decission tree        
+            ar.start = 1;
+            ar.end = totalLines;
+        } // else keep default of curr,curr
+    }
+    else if(hasDigits && hasSpecial && !hasSeparator) {
+        cs = invalidSyntax;
         return INVALID;
     }
-    else if (hasDigits) { 
-        if (hasCommandChar && commandChar < lastNum) {
+    else if (hasSpecial && hasSeparator && !hasDigits) {
+        if ((lastSpecial - firstSpecial) > 2) {
+            cs = invalidSyntax;
             return INVALID;
+        } else { // at least one of these must be true
+            if (firstSpecial == (separator - 1)) {
+                ar.start = totalLines;
+            }
+            if (lastSpecial == separator+1) {
+                ar.end = totalLines;
+            }
         }
-        
-        else {
-            // has a first number 
+    }
+    else if (hasDigits && hasSeparator && !hasSpecial) { 
+        // at least one of the following must be true
+        if (firstNum < separator) {
+            string sNum = 
+                commandBuffer.substr(firstNum, separator-firstNum);
+            stringstream sstream(sNum);
+            sstream >> ar.start;
+        }
+        if (lastNum > separator) {
+            string sNum = 
+                commandBuffer.substr(separator+1, lastNum-separator);
+            stringstream sstream(sNum);
+            sstream >> ar.end;
+        }
+    }
+    else if (hasDigits && hasSpecial && hasSeparator) {
+        if((firstNum < separator) && (lastNum > separator)){ 
+            cs = invalidSyntax;
+            return INVALID;
+        } else {               
             string sNum = 
                 commandBuffer.substr(firstNum, lastNum-(firstNum-1));
             stringstream sstream(sNum);
             sstream >> ar.start;
-            ar.end = ar.start;
-        }
-    }
-    else if (hasSpecial) {
-        if ((firstSpecial != lastSpecial) 
-            || (hasCommandChar && (commandChar < lastSpecial))) {
-            return INVALID;
-        }
-        
-        else {
-            ar.start = totalLines;
-            ar.end = ar.start;
-        }
-    }
-    else { // only has comma or has nothing for address
-        // TODO figure out commands where addressing changes
-        // special hasComma !hasCommandChar 1,$p
-        // special !hasComma !hasCommandChar 1d
-        if (hasComma && hasCommandChar && (commandChar < comma)) {
-            return INVALID;
-        }
-        else {
-            if (hasComma && !hasCommandChar) {
-                ar.start = 1;
+            if (firstNum < separator) {
                 ar.end = totalLines;
-                ct = print;
+                sstream >> ar.start;
+            } else { // allow super strange $,n syntax, maybe not a good idea
+                ar.start = totalLines;
+                sstream >> ar.end;
+                if (ar.end < totalLines) {
+                    cs = invalidRange;
+                    return INVALID;
+                }
             }
-            else if (!hasComma && !hasCommandChar) {
-                ar.start = 1;
-                ar.end = 1;
-                ct = down;
-            }
-            else if (!hasCommandChar) {
-                ct = print;
-            }            
         }
-    } 
-    // TODO remove debug
-    cout << "Address range start: " << ar.start;
-    cout << ", and end: " << ar.end;
-    cout << ", with command: " << (char) ct << endl;
-    // end
+    }
     // if we got this far, and the address range is valid, we're ok
-    bool rangeIsValid = (ar.start > 0 &&  ar.start 
+     bool rangeIsValid = true;
+    // u d w q and = don't need the address range, otherwise validate
+    if (ct != up && ct != down && ct != write 
+            && ct != quit && ct != printCurrLine) {
+        rangeIsValid = (ar.start > 0 &&  ar.start 
                 <= ar.end && ar.end <= totalLines);
+    }
     if (!rangeIsValid) {
+        cs = invalidRange;
         return INVALID;
     }
     else {
@@ -192,4 +192,8 @@ const Command::AddressRange& Command::getAddressRange() const{
 
 const Command::CommandType& Command::getCommandType() const{
     return this->ct;
+}
+
+const Command::CommandStatus& Command::getCommandStatus() const{
+    return this->cs;
 }

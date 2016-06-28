@@ -1,33 +1,49 @@
-#ifndef LINE_EDITOR
 
-#include <line>
-#include <string>
+#ifndef LINE_EDITOR
+#define LINE_EDITOR
+#include <fstream>
 #include <iostream>
-#include <functional> // try and then delete
+#include <list>
+#include <string>
+
 #include "Command.h"
 
+using namespace std;
+
 class LineEditor{
-  using namespace std;
-  friend class Command;
+
   private:
-    line<string> buffer;
+    list<string> buffer;
     Command com;
-    function<void(Command::AddressRange& ar)> nextCommand; // try and then delete TODO then change signatures below
-    void insert(Command::AddressRange& ar);
-    void append(Command::AddressRange& ar);
-    void remove(Command::AddressRange& ar);
-    void print(Command::AddressRange& ar);
-    void numberPrint(Command::AddressRange& ar);
-    void change(Command::AddressRange& ar);
-    void up(Command::AddressRange& ar);
-    void down(Command::AddressRange& ar);
-    void write(Command::AddressRange& ar);
+    size_t currentLine{0};
+    string filename;
+    bool fileExists;
+    bool dirty{false};
+    bool quitLed{false};
+    
+    // led-command methods
+    void insert(const size_t& line);
+    void append(const size_t& line);
+    void remove(const Command::AddressRange& ar);
+    void print(const Command::AddressRange& ar
+            , const bool& numbered = false);
+    void printCurrLine();
+    void change(const Command::AddressRange& ar);
+    void move(const size_t& line, const bool& up = false);
+    void write();
+    void quit();
+
+    // helper methods
+    void displayEnteringCommand();
+    void displayPrompt();
+    void routeCommand (const Command::CommandType& ct, 
+        const Command::AddressRange& ar);
 
   public:
-    LineEditor(const string& filename);
-    LineEdtitor()=delete;
+    LineEditor(const string& filename = "");
+    LineEditor()=delete;
     virtual ~LineEditor()=default;
     void run();
-}
+};
 
 #endif
