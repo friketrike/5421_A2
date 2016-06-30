@@ -1,7 +1,14 @@
+/*
+ * Assignennt 2, COMP 5421, summer 2016  
+ * Federico O'Reilly Regueiro 40012304
+ * Concordia University
+ * 
+ * Command implementation file
+ */
 
 #include "Command.h"
 
-const string Command::VALID_COMMAND_CHAR = "iarpncudwq=";
+const string Command::VALID_COMMAND_CHAR = "iarpncudwqo=";
 const string Command::VALID_ADDR_CHAR = "0123456789";
 const string Command::SPECIAL_ADDR_CHAR = "$";
 const string Command::SEPARATOR = ",";
@@ -171,8 +178,8 @@ bool Command::parse(string& commandBuffer,
     }
     // if we got this far, and the address range is valid, we're ok
      bool rangeIsValid = true;
-    // u d w q and = don't need the address range, otherwise validate
-    if (ct != up && ct != down && ct != write 
+    // u d w q = and o don't need the address range, otherwise validate
+    if (ct != up && ct != down && ct != write && ct != open
             && ct != quit && ct != printCurrLine) {
         rangeIsValid = (ar.start > 0 &&  ar.start 
                 <= ar.end && ar.end <= totalLines);

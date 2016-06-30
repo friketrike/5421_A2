@@ -1,40 +1,21 @@
+/*
+ * Assignennt 2, COMP 5421, summer 2016  
+ * Federico O'Reilly Regueiro 40012304
+ * Concordia University
+ * 
+ * Line Editor implementation file
+ */
 
 #include "LineEditor.h"
 
 LineEditor::LineEditor (const string& filename) {
     this->filename = filename;
-    if (!filename.empty()) {
-        ifstream file(filename);
-        string fileLine;
-        if (file.is_open()) {
-            while (getline(file, fileLine)) {
-                buffer.push_back(fileLine);
-                ++currentLine;
-            }
-            file.close();
-            cout << "\"" << filename << "\" " << to_string(buffer.size()) 
-                << " lines" << endl;
-        } else {
-            cerr << "Unable to open file " << filename << endl;
-            cout << "\"" << filename << "\" [New File]" << endl;
-        }
-    } else {
-        cout << "[New File]" << endl;
-    }
-}
-
-void LineEditor::displayEnteringCommand() {
-    cout << "Entering command mode." << endl;
-}
-void LineEditor::displayPrompt() {
-    cout << ((dirty) ? "*:" : ":");
+    openHelper();
 }
 
 void LineEditor::run () {
-    string fileStatus;
-    string prompt;
     displayEnteringCommand();
-    while (!quitLed) {
+    while (cin.good() && !quitLed) {
         displayPrompt();
         string commandBuffer;
         getline(cin, commandBuffer);
@@ -44,7 +25,6 @@ void LineEditor::run () {
         if (valid) {
             routeCommand(ct, ar);
         } else {
-            // TODO change other error messages to cerr...
             if (com.getCommandStatus() == Command::invalidRange) {
                 if (buffer.size() == 0) {
                     bool validInit = ((ct == Command::insert) 
@@ -55,8 +35,8 @@ void LineEditor::run () {
                         string e1 = "error:  file empty ";
                         string e2 = "- enter 'q' to quit, 'a' to append, ";
                         string e3 = "or 'i' to insert";
-                        cerr << e1 << e2 << e3;
-                    } 
+                        cerr << e1 << e2 << e3 << endl;
+                } 
                 } else {
                     cerr << "error:  invalid range " << ar.start << " through "
                        << ar.end << endl; 
@@ -69,37 +49,11 @@ void LineEditor::run () {
 }
 
 void LineEditor::insert (const size_t& line) {
-    string inputLine;
-    auto it = buffer.begin();
-    getline (cin , inputLine);
-    if (!buffer.empty()) {
-        advance(it, line-1);
-    }
-    while (cin.good () && inputLine != ".")
-    {
-        buffer.insert(it, inputLine);
-        currentLine++;
-        getline (cin , inputLine);
-    }
-    dirty = true;
-    displayEnteringCommand();
+    insertAppendHelper (line, true);
 }
 
 void LineEditor::append (const size_t& line) {
-    string inputLine;
-    auto it = buffer.begin();
-    getline (cin , inputLine);
-    if (!buffer.empty()) {
-        advance(it, line);
-    }
-    while (cin.good () && inputLine != ".")
-    {
-        buffer.insert(it, inputLine);
-        currentLine++;
-        getline (cin , inputLine);
-    }
-    dirty = true;
-    displayEnteringCommand();
+    insertAppendHelper (line, false);
 }
 
 void LineEditor::remove (const Command::AddressRange& ar) {
@@ -158,23 +112,23 @@ void LineEditor::change (const Command::AddressRange& ar) {
     dirty = true;
 }
  
-void LineEditor::move (const size_t& line, const bool& up /* = false*/) {
+void LineEditor::move (const size_t& lines, const bool& isUp /* = false*/) {
     if (buffer.size() == 0) {
         currentLine = 0;
     }
-    else if (up) {
-        if (line < currentLine) {
-            currentLine -= line;
+    else if (isUp) {
+        if (lines < currentLine) {
+            currentLine -= lines;
         } else {
             currentLine = 1;
             cerr << "BOF reached" << endl;
         }
     } else {
-        if (line <= (buffer.size() - currentLine)) {
-            currentLine += line;
+        if (lines <= (buffer.size() - currentLine)) {
+            currentLine += lines;
         } else {
             currentLine = buffer.size();
-            cerr << "EOF reached" << endl;
+            cerr << "EOF reached-debug" << endl; //TODO remove
         }
     }
 }
@@ -205,19 +159,86 @@ void LineEditor::write () {
 
 void LineEditor::quit () {
     if (dirty) {
-        string name = (filename.empty()) ? "[New File]" : filename;
-        cout << "Save changes to " << name << " (y/n)?" << endl;
-        char yn;
-        cin >> yn;
-        while (yn != 'y' && yn != 'n' && yn != 'Y' && yn != 'N') {
-            cin >> yn;
-        }
-        if (yn == 'Y' || yn == 'y') {
-            write();
-        }
+        saveChanges();
     }
     quitLed = true;
 }       
+
+void LineEditor::open () {
+    string newFilename;
+    if (dirty) {
+        saveChanges();
+    }
+    cout << "open file, filename? ";
+    if (cin.good()) {
+        cin >> newFilename;
+    } // TODO some form of validation
+    filename = newFilename;
+    buffer.clear(); // clear will call destructors on each string, nice!
+    currentLine = 0;
+    openHelper();
+    dirty = false;
+}
+
+void LineEditor::openHelper () {
+    if (!filename.empty()) {
+        ifstream file(filename);
+        string fileLine;
+        if (file.is_open()) {
+            while (getline(file, fileLine)) {
+                buffer.push_back(fileLine);
+                ++currentLine;
+            }
+            file.close();
+            cout << "\"" << filename << "\" " << to_string(buffer.size()) 
+                << " lines" << endl;
+        } else {
+            cerr << "Unable to open file " << filename << endl;
+            cout << "\"" << filename << "\" [New File]" << endl;
+        }
+    } else {
+        cout << "[New File]" << endl;
+    }
+}
+
+void LineEditor::insertAppendHelper (const size_t& line, const bool& isInsert) {
+    string inputLine; 
+    auto it = buffer.begin();
+    getline (cin , inputLine);
+    if (!buffer.empty()) {
+        size_t linesToAdvance = (isInsert) ? line-1 : line;
+        advance(it, linesToAdvance);
+        currentLine = linesToAdvance;
+    }
+    while (cin.good () && inputLine != ".")
+    {
+        buffer.insert(it, inputLine);
+        currentLine++;
+        dirty = true;
+        getline (cin , inputLine);
+    }
+    displayEnteringCommand();
+}
+
+void LineEditor::saveChanges () {
+    string name = (filename.empty()) ? "[New File]" : filename;
+    cout << "Save changes to " << name << " (y/n)?" << endl;
+    char yn;
+    cin >> yn;
+    while (cin.good() && yn != 'y' && yn != 'n' && yn != 'Y' && yn != 'N') {
+        cin >> yn;
+    }
+    if (yn == 'Y' || yn == 'y') {
+        write();
+    }
+}
+
+void LineEditor::displayEnteringCommand() {
+    cout << "Entering command mode." << endl;
+}
+void LineEditor::displayPrompt() {
+    cout << ((dirty) ? "*:" : " :");
+}
 
 void LineEditor::routeCommand (const Command::CommandType& ct, 
         const Command::AddressRange& ar) {
@@ -254,6 +275,9 @@ void LineEditor::routeCommand (const Command::CommandType& ct,
                 break;
             case Command::quit:
                 quit();
+                break;
+            case Command::open:
+                open();
                 break;
             case Command::notRecognized:
                 cerr << "error:  command not recognized by the parser" << endl;
