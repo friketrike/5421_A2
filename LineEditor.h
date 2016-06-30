@@ -100,6 +100,12 @@ class LineEditor{
      * the user to save the buffer's contents
      */
     void open();
+    /**
+     * Displays usage information for the user.
+     * Defeats the purpose of a line editor in that it's rather verbose
+     * but if help is needed, what can you do?
+     */
+    void help(); 
 
     // helper methods
     /**

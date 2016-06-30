@@ -171,13 +171,31 @@ void LineEditor::open () {
     }
     cout << "open file, filename? ";
     if (cin.good()) {
-        cin >> newFilename;
+        getline(cin, newFilename);
     } // TODO some form of validation
     filename = newFilename;
     buffer.clear(); // clear will call destructors on each string, nice!
     currentLine = 0;
     openHelper();
     dirty = false;
+}
+
+void LineEditor::help () {
+    cout << "Line editor works on a text buffer one line at a time." << endl;
+    cout << "Valid commands are of the form [m][,[n]][c], where [] denote ";
+    cout << "optional parameters, m and n denote start-end line number pair ";
+    cout << "that represents a range of lines that will be affected by the c ";
+    cout << "command. Defaults for m and n are the current line and c ";
+    cout << "defaults to print. if only a comma is input the whole buffer is ";
+    cout << "printed. The commands are: i - insert | a - append | p - print | ";
+    cout << "n - numbered print | c - change | u - up | d - down | w - write ";
+    cout << "| = - print current line number | q - quit | o - open | h - help.";
+    cout << endl << "The i and a commands take lines from stdin, to exit back ";
+    cout << "into command mode, the user must enter a single '.',. " << endl;
+    cout << "When a buffer contains unmodified data, the prompt will display ";
+    cout << "a star. The user will be prompted to save when quitting or ";
+    cout << "opening another file.";
+    cout << endl;
 }
 
 void LineEditor::openHelper () {
@@ -278,6 +296,9 @@ void LineEditor::routeCommand (const Command::CommandType& ct,
                 break;
             case Command::open:
                 open();
+                break;
+            case Command::help:
+                help();
                 break;
             case Command::notRecognized:
                 cerr << "error:  command not recognized by the parser" << endl;

@@ -40,6 +40,7 @@ class Command{
         printCurrLine = '=', 
         quit = 'q',
         open = 'o',
+        help = 'h',
         notRecognized = 'z'
     };
     /** 
@@ -72,7 +73,7 @@ class Command{
         /**
          * Constructor with both a start and end parameters.
          * @param s is the start line-address of the specified range.
-         * @param s is the end line-address of the specified range.
+         * @param e is the end line-address of the specified range.
          */
         AddressRange(const size_t& s, const size_t& e)
             : start(s)

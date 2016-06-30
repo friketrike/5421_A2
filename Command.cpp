@@ -8,7 +8,7 @@
 
 #include "Command.h"
 
-const string Command::VALID_COMMAND_CHAR = "iarpncudwqo=";
+const string Command::VALID_COMMAND_CHAR = "iarpncudwqoh=";
 const string Command::VALID_ADDR_CHAR = "0123456789";
 const string Command::SPECIAL_ADDR_CHAR = "$";
 const string Command::SEPARATOR = ",";
@@ -180,7 +180,7 @@ bool Command::parse(string& commandBuffer,
      bool rangeIsValid = true;
     // u d w q = and o don't need the address range, otherwise validate
     if (ct != up && ct != down && ct != write && ct != open
-            && ct != quit && ct != printCurrLine) {
+            && ct != quit && ct != printCurrLine && ct != help) {
         rangeIsValid = (ar.start > 0 &&  ar.start 
                 <= ar.end && ar.end <= totalLines);
     }
