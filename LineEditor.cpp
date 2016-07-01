@@ -34,7 +34,7 @@ void LineEditor::run () {
                     } else {
                         string e1 = "error:  file empty ";
                         string e2 = "- enter 'q' to quit, 'a' to append, ";
-                        string e3 = "or 'i' to insert";
+                        string e3 = "'i' to insert or 'h' for help";
                         cerr << e1 << e2 << e3 << endl;
                 } 
                 } else {
@@ -128,7 +128,7 @@ void LineEditor::move (const size_t& lines, const bool& isUp /* = false*/) {
             currentLine += lines;
         } else {
             currentLine = buffer.size();
-            cerr << "EOF reached-debug" << endl; //TODO remove
+            cerr << "EOF reached" << endl;
         }
     }
 }
@@ -183,14 +183,18 @@ void LineEditor::open () {
 void LineEditor::help () {
     cout << "Line editor works on a text buffer one line at a time." << endl;
     cout << "Valid commands are of the form [m][,[n]][c], where [] denote ";
-    cout << "optional parameters, m and n denote start-end line number pair ";
-    cout << "that represents a range of lines that will be affected by the c ";
-    cout << "command. Defaults for m and n are the current line and c ";
-    cout << "defaults to print. if only a comma is input the whole buffer is ";
+    cout << "optional parameters, m and n denote a start-end line number pair ";
+    cout << "that represents a range of lines to be affected by the command ";
+    cout << "c. Defaults for m and n are the current line and c ";
+    cout << "defaults to print."<< endl;
+    cout << "There are two address special characters: '.' and '$' which ";
+    cout << "represent the current line and the last line respectively." << endl;
+    cout << "If only a comma is input the whole buffer is ";
     cout << "printed. The commands are: i - insert | a - append | p - print | ";
     cout << "n - numbered print | c - change | u - up | d - down | w - write ";
     cout << "| = - print current line number | q - quit | o - open | h - help.";
-    cout << endl << "The i and a commands take lines from stdin, to exit back ";
+    cout << endl;
+    cout << "The i and a commands take lines from stdin, to exit back ";
     cout << "into command mode, the user must enter a single '.',. " << endl;
     cout << "When a buffer contains unmodified data, the prompt will display ";
     cout << "a star. The user will be prompted to save when quitting or ";
@@ -246,6 +250,11 @@ void LineEditor::saveChanges () {
     while (cin.good() && yn != 'y' && yn != 'n' && yn != 'Y' && yn != 'N') {
         cin >> yn;
     }
+
+    // clear the input buffer
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
     if (yn == 'Y' || yn == 'y') {
         write();
     }

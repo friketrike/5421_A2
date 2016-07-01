@@ -12,6 +12,7 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include <limits> // used for 'flushing' cin
 
 #include "Command.h"
 

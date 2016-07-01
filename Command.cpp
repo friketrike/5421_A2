@@ -10,8 +10,14 @@
 
 const string Command::VALID_COMMAND_CHAR = "iarpncudwqoh=";
 const string Command::VALID_ADDR_CHAR = "0123456789";
-const string Command::SPECIAL_ADDR_CHAR = "$";
+
+const char Command::DOT = '.';
+const char Command::END = '$';
+const string Command::SPECIAL_ADDR_CHAR 
+    = string() + Command::DOT + Command::END;
+
 const string Command::SEPARATOR = ",";
+
 const string Command::VALID_CHAR = Command::VALID_COMMAND_CHAR 
     + Command::VALID_ADDR_CHAR + Command::SPECIAL_ADDR_CHAR 
     + Command::SEPARATOR;
@@ -83,7 +89,7 @@ bool Command::parse(string& commandBuffer,
     }
 
     if (hasCommandChar) {
-        ct = (CommandType) commandBuffer[commandChar];
+        ct = (CommandType) commandBuffer.at(commandChar);
     }
     else {
         ct = print; // default command
@@ -109,10 +115,10 @@ bool Command::parse(string& commandBuffer,
             cs = invalidSyntax;
             return INVALID;
         }
-        else {
+        else if (commandBuffer.at(firstSpecial) == END) {
             ar.start = totalLines;
             ar.end = totalLines;
-        }
+        } // else - we needn't do anything for dot, ar already at currentLine
     }
     else if (hasSeparator && !hasDigits && !hasSpecial) {
         if (!hasCommandChar) {
@@ -130,11 +136,13 @@ bool Command::parse(string& commandBuffer,
         if ((lastSpecial - firstSpecial) > 2) {
             cs = invalidSyntax;
             return INVALID;
-        } else { // at least one of these must be true
-            if (firstSpecial == (separator - 1)) {
+        } else { // at least one of these must be true if we have END
+            if (firstSpecial == (separator - 1) 
+                    && commandBuffer.at(firstSpecial) == END) {
                 ar.start = totalLines;
             }
-            if (lastSpecial == separator+1) {
+            if (lastSpecial == separator + 1 
+                    && commandBuffer.at(lastSpecial) == END) {
                 ar.end = totalLines;
             }
         }
@@ -164,10 +172,14 @@ bool Command::parse(string& commandBuffer,
             stringstream sstream(sNum);
             sstream >> ar.start;
             if (firstNum < separator) {
-                ar.end = totalLines;
+                ar.end = (commandBuffer.at(firstSpecial) == END) 
+                    ? totalLines
+                    : currentLine;
                 sstream >> ar.start;
             } else { // allow super strange $,n syntax, maybe not a good idea
-                ar.start = totalLines;
+                ar.start = (commandBuffer.at(firstSpecial) == END) 
+                    ? totalLines
+                    : currentLine;
                 sstream >> ar.end;
                 if (ar.end < totalLines) {
                     cs = invalidRange;
@@ -177,7 +189,7 @@ bool Command::parse(string& commandBuffer,
         }
     }
     // if we got this far, and the address range is valid, we're ok
-     bool rangeIsValid = true;
+    bool rangeIsValid = true;
     // u d w q = and o don't need the address range, otherwise validate
     if (ct != up && ct != down && ct != write && ct != open
             && ct != quit && ct != printCurrLine && ct != help) {

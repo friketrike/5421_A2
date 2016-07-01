@@ -102,6 +102,8 @@ class Command{
     // as well as reading the code a bit clearer (I hope)
     static const string VALID_COMMAND_CHAR; /**<Chars used in valid commands*/
     static const string VALID_ADDR_CHAR;/**<Chars used for address ranges*/
+    static const char DOT; /**<Char used to represent current address */
+    static const char END; /**<Char used to represent the last buffer line*/
     static const string SPECIAL_ADDR_CHAR;/**<Chars that expand to addresses*/
     static const string SEPARATOR;/**<The character used as a s,e separator*/
     static const string VALID_CHAR;/**<All of the characters that can be used*/
