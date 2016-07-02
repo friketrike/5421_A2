@@ -190,11 +190,22 @@ void LineEditor::help () {
     cout << "There are two address special characters: '.' and '$' which ";
     cout << "represent the current line and the last line respectively." << endl;
     cout << "If only a comma is input the whole buffer is ";
-    cout << "printed. The commands are: i - insert | a - append | p - print | ";
-    cout << "n - numbered print | c - change | u - up | d - down | w - write ";
-    cout << "| = - print current line number | q - quit | o - open | h - help.";
-    cout << endl;
-    cout << "The i and a commands take lines from stdin, to exit back ";
+    cout << "printed. The commands are: " << endl;
+    cout << (char) Command::insert << " - insert" << endl;
+    cout << (char) Command::append << " - append" << endl;
+    cout << (char) Command::print << " - print" << endl;
+    cout << (char) Command::numberPrint << " - numbered print" << endl;
+    cout << (char) Command::change << " - change" << endl;
+    cout << (char) Command::up << " - move up"<< endl;
+    cout << (char) Command::down << " - move down" << endl;
+    cout << (char) Command::write << " - write buffer to file" << endl;
+    cout << (char) Command::printCurrLine << " - print current line number" << endl;
+    cout << (char) Command::quit << " - quit led" << endl;
+    cout << (char) Command::open << " - open another file" << endl;
+    cout << (char) Command::help << " - print this help message" << endl;
+    cout << "The " << (char) Command::insert << " and ";
+    cout << (char) Command::append << " commands ";
+    cout << "take lines to be input from stdin, in order to exit back ";
     cout << "into command mode, the user must enter a single '.',. " << endl;
     cout << "When a buffer contains unmodified data, the prompt will display ";
     cout << "a star. The user will be prompted to save when quitting or ";
@@ -219,7 +230,7 @@ void LineEditor::openHelper () {
             cout << "\"" << filename << "\" [New File]" << endl;
         }
     } else {
-        cout << "[New File]" << endl;
+        cout << "\"?\" [New File]" << endl;
     }
 }
 

@@ -6,18 +6,33 @@
 # lives here http://mrbook.org/blog/tutorials/make/
 #
 CC=g++
+#DX=doxygen
 CFLAGS=-c -Wall -std=c++11
 LDFLAGS=
 
-all: driver
+DX := $(shell command -v doxygen 2> /dev/null)
+LTX := $(shell command -v latex 2> /dev/null)
 
-driver: driver.o Command.o LineEditor.o
+all: led docs
+ifndef DX #TODO next time figure how to check for latex too 
+	$(warning "doxygen is not available, skipping docs")
+docs:
+else #TODO define a latex rule here too...
+docs: doxy
+endif 
+
+#all: led
+
+led: led.o Command.o LineEditor.o
 	$(CC) $(LDFLAGS) driver.o Command.o LineEditor.o -o $@
 
-driver.o: driver.cpp Command.cpp LineEditor.cpp
+led.o: driver.cpp Command.cpp LineEditor.cpp
 	$(CC) $(CFLAGS) driver.cpp Command.cpp LineEditor.cpp
+
+doxy: Doxyfile Command.h LineEditor.h README.md
+	$(DX) Doxyfile 
 
 .PHONY: clean
 clean:
-	rm -f *.o *~ 
+	rm -rf *.o *~
 
